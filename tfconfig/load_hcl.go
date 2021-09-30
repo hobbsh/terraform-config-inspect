@@ -3,6 +3,7 @@ package tfconfig
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -309,6 +310,14 @@ func LoadModuleFromFile(file *hcl.File, mod *Module) hcl.Diagnostics {
 					})
 				}
 			} else {
+				awsType, _ := regexp.Compile("^aws_.*$")
+				if awsType.MatchString(r.Type) {
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  "Resource missing provider",
+						Detail:   fmt.Sprintf("Resource %s in file %s:%d  must contain a provider block!", r.Name, r.Pos.Filename, r.Pos.Line),
+					})
+				}
 				// If provider _isn't_ set then we'll infer it from the
 				// resource type.
 				r.Provider = ProviderRef{
